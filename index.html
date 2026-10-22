@@ -111,6 +111,19 @@
   .sub{font-size:17px;font-weight:500;margin-top:14px;}
   .ftag{position:absolute;bottom:16px;right:24px;font-size:10px;color:var(--mute);}
   .dark .ftag{color:var(--cyan3);}
+  /* ===== Mobile / touch ===== */
+  .nav button{touch-action:manipulation;}
+  @media (max-width:768px), (pointer:coarse){
+    .nav{bottom:14px;padding:10px 18px;gap:18px;}
+    .nav button{width:46px;height:46px;font-size:22px;}
+    .nav .count{font-size:15px;min-width:60px;}
+    .hint{font-size:10px;top:8px;padding:0 10px;text-align:center;width:100%;}
+  }
+  /* portrait phones: the 960x540 slide is scaled by JS; keep nav clear of it */
+  @media (max-width:560px){
+    .hint{display:none;}
+    .nav{bottom:10px;}
+  }
 </style>
 </head>
 <body>
@@ -559,7 +572,10 @@
     location.hash = 's' + (i+1);
   }
   function fit(){
-    var scale = Math.min(window.innerWidth/960, window.innerHeight/540) * 0.94;
+    var isTouch = window.matchMedia('(pointer:coarse)').matches || window.innerWidth<=768;
+    var pad = isTouch ? 0.98 : 0.94;
+    var reserveH = isTouch ? 84 : 40; // leave room for the nav bar
+    var scale = Math.min(window.innerWidth/960, (window.innerHeight-reserveH)/540) * pad;
     stage.style.transform = 'scale(' + scale + ')';
   }
   prevB.onclick = function(){ show(i-1); };
@@ -571,7 +587,20 @@
     else if(e.key==='End'){ show(n-1); }
     else if(e.key==='f' || e.key==='F'){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } }
   });
+  // swipe navigation (touch)
+  var tx=0, ty=0, tt=0;
+  document.addEventListener('touchstart', function(e){
+    var t=e.changedTouches[0]; tx=t.clientX; ty=t.clientY; tt=Date.now();
+  }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    var t=e.changedTouches[0];
+    var dx=t.clientX-tx, dy=t.clientY-ty, dt=Date.now()-tt;
+    if(dt<800 && Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.5){
+      if(dx<0){ show(i+1); } else { show(i-1); }
+    }
+  }, {passive:true});
   window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', function(){ setTimeout(fit, 150); });
   // deep-link support (#s7)
   var m = (location.hash.match(/^#s(\d+)$/));
   fit();

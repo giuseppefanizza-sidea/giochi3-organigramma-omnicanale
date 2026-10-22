@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giochi3 - Organizzazione progetto web (Sidea X preview)</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#00253D; --navy2:#0B3254; --navy3:#002E5D; --dark:#010326;
+    --cyan:#66CBF2; --cyan2:#7CD2F4; --cyan3:#47B4BE;
+    --purple:#93609E; --purple2:#C9AFCE;
+    --ice:#E1F0FC; --iceBG:#F4F7FA; --white:#FFFFFF;
+    --mute:#9E9E9E; --grey:#595959; --line:#E3E8EE; --lineNavy:#133A5C;
+    --gold:#FFAB40; --teal:#0097A7; --green:#2E7D32; --red:#C62828;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{background:#0e1116;font-family:'Montserrat',sans-serif;color:var(--navy);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  /* stage scales the 960x540 slide to the viewport */
+  .stage{position:relative;width:960px;height:540px;transform-origin:center center;}
+  .deck{position:relative;width:960px;height:540px;}
+  .slide{
+    position:absolute;inset:0;width:960px;height:540px;overflow:hidden;
+    border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.55);background:var(--white);
+    opacity:0;visibility:hidden;transition:opacity .25s ease;
+  }
+  .slide.active{opacity:1;visibility:visible;}
+  /* nav controls */
+  .nav{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:14px;z-index:50;
+    background:rgba(0,37,61,.85);border:1px solid #133A5C;border-radius:30px;
+    padding:8px 16px;backdrop-filter:blur(6px);}
+  .nav button{background:var(--cyan);color:var(--navy);border:none;border-radius:50%;
+    width:34px;height:34px;font-size:17px;font-weight:700;cursor:pointer;line-height:1;
+    display:flex;align-items:center;justify-content:center;transition:background .15s;}
+  .nav button:hover{background:var(--cyan2);}
+  .nav button:disabled{opacity:.35;cursor:default;}
+  .nav .count{color:#fff;font-size:13px;font-weight:600;min-width:52px;text-align:center;font-variant-numeric:tabular-nums;}
+  .hint{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:50;
+    color:#5b6675;font-size:11px;letter-spacing:.5px;}
+  /* layout helpers */
+  .pad{position:absolute;inset:0;padding:48px 56px;}
+  .eyebrow{font-weight:600;font-size:13px;letter-spacing:2px;text-transform:uppercase;}
+  .barhead{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+  .bar{width:6px;height:34px;background:var(--cyan);border-radius:3px;}
+  h1{font-weight:600;font-size:30px;line-height:1.15;}
+  h2{font-weight:600;font-size:26px;line-height:1.15;}
+  .snum{position:absolute;top:18px;right:26px;font-size:12px;font-weight:500;color:var(--mute);}
+  .logo{position:absolute;top:22px;left:28px;font-weight:700;font-size:18px;letter-spacing:1px;}
+  .logo .x{color:var(--cyan);}
+  /* dark slide */
+  .dark{background:var(--navy);color:var(--white);}
+  .dark h1,.dark h2{color:var(--white);}
+  .dark .logo{color:var(--white);}
+  .dark .eyebrow{color:var(--cyan);}
+  .dark .snum{color:var(--cyan2);}
+  .dark .sub{color:var(--ice);}
+  /* cover waves */
+  .cover{background:
+     radial-gradient(1200px 400px at 80% -10%, rgba(102,203,242,.22), transparent 60%),
+     radial-gradient(900px 400px at 10% 120%, rgba(147,96,158,.28), transparent 60%),
+     var(--navy);}
+  .cover-wave{position:absolute;bottom:0;left:0;right:0;height:170px;
+    background:repeating-linear-gradient(90deg,transparent 0 6px,rgba(102,203,242,.10) 6px 7px);
+    mask:linear-gradient(to top,#000,transparent);}
+  /* cards */
+  .cards{display:flex;gap:16px;margin-top:20px;flex-wrap:wrap;}
+  .card{background:var(--iceBG);border:1px solid var(--line);border-radius:10px;padding:16px 16px;flex:1;min-width:140px;}
+  .dark .card{background:var(--navy2);border-color:var(--lineNavy);}
+  .card h3{font-size:15px;font-weight:600;margin-bottom:6px;color:var(--navy);}
+  .dark .card h3{color:var(--cyan);}
+  .card p{font-size:12.5px;line-height:1.5;color:var(--grey);}
+  .dark .card p{color:var(--ice);}
+  .bignum{font-weight:700;font-size:30px;color:var(--cyan);line-height:1;}
+  .bignum.p{color:var(--purple);}
+  ul.clean{list-style:none;margin-top:14px;}
+  ul.clean li{font-size:14px;line-height:1.7;padding-left:20px;position:relative;color:var(--grey);}
+  ul.clean li::before{content:"";position:absolute;left:0;top:9px;width:9px;height:9px;border-radius:2px;background:var(--cyan);}
+  ul.clean li:nth-child(even)::before{background:var(--purple);}
+  .dark ul.clean li{color:var(--ice);}
+  .two{display:flex;gap:26px;margin-top:14px;}
+  .two>div{flex:1;}
+  .colh{font-weight:600;font-size:16px;margin-bottom:8px;color:var(--purple);}
+  .dark .colh{color:var(--cyan);}
+  .pill{display:inline-block;background:var(--cyan);color:var(--navy);font-weight:600;font-size:11px;padding:3px 10px;border-radius:12px;margin:2px 4px 2px 0;}
+  .pill.p{background:var(--purple);color:#fff;}
+  .pill.o{background:var(--gold);color:var(--navy);}
+  table.mini{width:100%;border-collapse:collapse;margin-top:14px;font-size:12px;}
+  table.mini th{background:var(--navy);color:#fff;padding:6px 8px;text-align:left;font-weight:600;}
+  table.mini td{padding:5px 8px;border-bottom:1px solid var(--line);color:var(--grey);}
+  table.mini td.y{color:var(--green);font-weight:600;text-align:center;}
+  table.mini td.n{color:var(--red);text-align:center;}
+  table.mini td.s{color:var(--gold);font-weight:600;text-align:center;}
+  .dark table.mini td{color:var(--ice);border-bottom:1px solid var(--lineNavy);}
+  .dark table.mini td[style*="var(--navy)"]{color:#fff !important;}
+  .note{font-size:11.5px;color:var(--mute);margin-top:12px;font-style:italic;}
+  .lead{font-size:16px;line-height:1.6;color:var(--grey);margin-top:12px;max-width:760px;}
+  .dark .lead{color:var(--ice);}
+  .timeline{display:flex;gap:10px;margin-top:22px;}
+  .step{flex:1;text-align:center;}
+  .step .dot{width:100%;height:5px;border-radius:3px;background:var(--cyan);margin-bottom:8px;}
+  .step:nth-child(even) .dot{background:var(--purple);}
+  .step .m{font-size:11px;color:var(--mute);font-weight:500;}
+  .step .t{font-size:13px;font-weight:600;color:var(--navy);margin-top:3px;}
+  .dark .step .t{color:#fff;}
+  .flow{display:flex;align-items:center;gap:12px;margin-top:26px;}
+  .flow .fbox{background:var(--navy2);border:1px solid var(--lineNavy);border-radius:10px;padding:16px 18px;color:#fff;font-weight:600;font-size:15px;flex:1;text-align:center;}
+  .flow .arr{color:var(--cyan);font-size:26px;font-weight:700;}
+  .sub{font-size:17px;font-weight:500;margin-top:14px;}
+  .ftag{position:absolute;bottom:16px;right:24px;font-size:10px;color:var(--mute);}
+  .dark .ftag{color:var(--cyan3);}
+</style>
+</head>
+<body>
+<div class="hint">Frecce &#8592; &#8594; o barra spaziatrice per navigare &middot; F per schermo intero</div>
+<div class="stage" id="stage">
+<div class="deck" id="deck">
+
+<!-- 1 COVER -->
+<section class="slide dark cover">
+  <div class="pad">
+    <div class="eyebrow" style="margin-top:120px;">Villabebe Giokids - Progetto web</div>
+    <h1 style="font-size:44px;margin-top:14px;max-width:720px;">Organizzazione del progetto web</h1>
+    <div class="sub" style="color:var(--ice);max-width:680px;">Dal negozio fisico all'omnicanale: ruoli, responsabilità e governance</div>
+    <div style="position:absolute;bottom:48px;left:56px;font-size:13px;color:var(--purple2);">Sidea &middot; 22 ottobre 2026</div>
+  </div>
+  <div class="cover-wave"></div>
+</section>
+
+<!-- 2 PUNTO DI PARTENZA -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">02</div>
+  <div class="pad" style="padding-top:70px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Il punto di partenza</div></div>
+    <h2>Il vostro valore è il know-how del negozio</h2>
+    <div class="two" style="margin-top:22px;">
+      <div>
+        <div class="colh">Ciò che già avete</div>
+        <ul class="clean">
+          <li>Conoscenza dell'assortimento e dei prodotti</li>
+          <li>Relazione diretta con il cliente</li>
+          <li>Esperienza di category e merchandising</li>
+        </ul>
+      </div>
+      <div>
+        <div class="colh">Ciò che il digitale aggiunge</div>
+        <ul class="clean">
+          <li>Dati e misurazione</li>
+          <li>Scala e raggiungibilità</li>
+          <li>Automazione e personalizzazione</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note">Non partiamo da zero: partiamo da una base forte.</div>
+  </div>
+  <div class="ftag">01-mappa-stato-attuale</div>
+</section>
+
+<!-- 3 SFIDA -->
+<section class="slide dark">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">03</div>
+  <div class="pad" style="padding-top:70px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow">La sfida omnicanale</div></div>
+    <h2>Il digitale non è "un altro negozio"</h2>
+    <p class="lead">È un canale integrato con il fisico, con il cliente al centro. Chiede ruoli di raccordo e processi nuovi per tradurre il know-how del punto vendita in esperienza digitale.</p>
+    <div class="flow">
+      <div class="fbox">Negozio fisico</div>
+      <div class="arr">&#8644;</div>
+      <div class="fbox" style="background:var(--purple);border-color:var(--purple);">Cliente</div>
+      <div class="arr">&#8644;</div>
+      <div class="fbox">E-commerce</div>
+    </div>
+  </div>
+  <div class="ftag">visione</div>
+</section>
+
+<!-- 4 AREE -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">04</div>
+  <div class="pad" style="padding-top:40px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">La mappa</div></div>
+    <h2 style="font-size:23px;">Le aree funzionali del progetto web</h2>
+    <div class="two" style="margin-top:12px;gap:22px;">
+      <div style="flex:1.05;">
+        <div class="colh" style="font-size:13px;">Interni (team Giochi3)</div>
+        <table class="mini" style="margin-top:5px;font-size:10.5px;">
+          <tr><td style="width:40%;font-weight:600;color:var(--navy);">Category &amp; Pricing</td><td>Assortimento, prezzi, promo</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">Data &amp; BI</td><td>Report, margine, segmentazione</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">Ecommerce Ops</td><td>Ordini, assistenza, resi</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">Logistica</td><td>Preparazione ordini, giacenze</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">IT / Sistemi</td><td>Casse, ERP, infrastruttura</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">Marketing &amp; Social</td><td>Raffaella + Category</td></tr>
+        </table>
+      </div>
+      <div style="flex:1;">
+        <div class="colh" style="font-size:13px;">Da assumere</div>
+        <table class="mini" style="margin-top:5px;font-size:10.5px;">
+          <tr><td style="width:44%;font-weight:600;color:var(--navy);">Ecommerce Manager</td><td>Strategia del canale</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">Spec. Anagrafica</td><td>Catalogo e dati prodotto</td></tr>
+        </table>
+        <div class="colh" style="font-size:13px;margin-top:14px;color:var(--cyan3);">Esterni (consulenza Sidea)</div>
+        <table class="mini" style="margin-top:5px;font-size:10.5px;">
+          <tr><td style="width:44%;font-weight:600;color:var(--navy);">SEO</td><td>Posizionamento organico</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">Email &amp; Automation</td><td>Flussi e newsletter</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">IT Ecommerce</td><td>Sito, integrazioni</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy);">BI omnicanale</td><td>Dashboard e analisi</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="ftag">01-mappa-stato-attuale</div>
+</section>
+
+<!-- 5 CHI OPERA -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">05</div>
+  <div class="pad" style="padding-top:70px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Le persone</div></div>
+    <h2>Chi già opera, con il suo know-how</h2>
+    <table class="mini">
+      <tr><th>Area</th><th>Persone del fisico</th></tr>
+      <tr><td>Category</td><td>Carmela, Caterina, Claudio, Adele, Angela</td></tr>
+      <tr><td>Analisi vendite / Data</td><td>Nicola, Tania</td></tr>
+      <tr><td>Promozioni (POS + web)</td><td>Antonello, Claudio, Antonella</td></tr>
+      <tr><td>Ticketing / Assistenza</td><td>Ninfa, Anna</td></tr>
+      <tr><td>Logistica</td><td>Antonella Valluzzi</td></tr>
+      <tr><td>IT / Sistemi</td><td>Isidoro, Cesare</td></tr>
+      <tr><td>Marketing / Social</td><td>Raffaella</td></tr>
+    </table>
+    <div class="note">Il team esiste già: va orientato, non ricostruito.</div>
+  </div>
+  <div class="ftag">01-mappa-stato-attuale</div>
+</section>
+
+<!-- 6 RACI -->
+<section class="slide dark">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">06</div>
+  <div class="pad" style="padding-top:70px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow">Il metodo</div></div>
+    <h2>La matrice RACI: chi fa cosa</h2>
+    <div class="cards" style="margin-top:22px;">
+      <div class="card"><div class="bignum">R</div><h3>Responsible</h3><p>Chi svolge concretamente l'attività</p></div>
+      <div class="card"><div class="bignum p">A</div><h3>Accountable</h3><p>Chi approva. Una sola A per attività</p></div>
+      <div class="card"><div class="bignum">C</div><h3>Consulted</h3><p>L'esperto da ascoltare prima</p></div>
+      <div class="card"><div class="bignum p">I</div><h3>Informed</h3><p>Chi viene tenuto al corrente dopo</p></div>
+    </div>
+    <div class="note" style="color:var(--cyan2);">Una sola responsabilità chiara per ogni attività.</div>
+  </div>
+  <div class="ftag">legenda RACI</div>
+</section>
+
+<!-- 7 RACI DEL PROGETTO -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">07</div>
+  <div class="pad" style="padding-top:40px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Il metodo applicato</div></div>
+    <h2 style="font-size:22px;">La RACI del progetto (per area)</h2>
+    <table class="mini" style="margin-top:12px;font-size:11px;">
+      <tr><th style="width:26%;">Area / attività</th><th>A (approva)</th><th>R (esegue)</th><th>C / I</th></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Assortimento e prezzi</td><td>Carmela</td><td>Category</td><td>Data, Ecommerce Mgr</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Promo cross-canale</td><td>Ecommerce Mgr</td><td>Antonello, Claudio</td><td>Category, Mktg</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Report e BI</td><td>Tania</td><td>Nicola</td><td>Direzione</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Customer journey / loyalty</td><td>Ecommerce Mgr</td><td>Tania</td><td>Mktg, Ticketing</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Anagrafica prodotto</td><td>Spec. Anagrafica</td><td>Spec. Anagrafica</td><td>Category</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Marketing e campagne</td><td>Ecommerce Mgr</td><td>Raffaella / Sidea</td><td>Data</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Ordini e assistenza</td><td>Ecommerce Ops</td><td>Ninfa, Anna</td><td>Logistica</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Logistica e giacenze</td><td>Ecommerce Ops</td><td>A. Valluzzi</td><td>IT</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">Sito e integrazioni</td><td>IT Ecommerce</td><td>Sidea</td><td>Isidoro</td></tr>
+    </table>
+    <div class="note">Vista sintetica per area. La matrice completa per singola attività è nel documento operativo.</div>
+  </div>
+  <div class="ftag">03-raci-pulita</div>
+</section>
+
+<!-- 8 4 RUOLI -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">08</div>
+  <div class="pad" style="padding-top:60px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">I buchi da riempire</div></div>
+    <h2>4 ruoli chiave oggi scoperti</h2>
+    <div class="cards" style="margin-top:18px;">
+      <div class="card"><h3>Ecommerce Manager</h3><p>Strategia del canale<br><span class="pill">Da assumere</span></p></div>
+      <div class="card"><h3>Specialista Anagrafica</h3><p>Catalogo e dati prodotto<br><span class="pill p">Assumere / formare</span></p></div>
+      <div class="card"><h3>Ecommerce Ops</h3><p>Operatività quotidiana<br><span class="pill o">Nominare</span></p></div>
+      <div class="card"><h3>IT Ecommerce</h3><p>Stack tecnico del sito<br><span class="pill p">Sidea</span></p></div>
+    </div>
+    <div class="note">Il gap principale: nessuno è oggi responsabile unico del canale.</div>
+  </div>
+  <div class="ftag">02-gap-analysis</div>
+</section>
+
+<!-- 9 ECOMMERCE MANAGER -->
+<section class="slide dark">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">09</div>
+  <div class="pad" style="padding-top:48px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow">Ruolo prioritario</div></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <h2>Ecommerce Manager</h2>
+      <span class="pill" style="font-size:13px;padding:5px 14px;">Da assumere o nominare</span>
+    </div>
+    <div class="two" style="margin-top:14px;">
+      <div>
+        <div class="colh">Responsabilità</div>
+        <ul class="clean">
+          <li>Roadmap omnicanale</li>
+          <li>Prezzi e promo cross-canale</li>
+          <li>Customer journey e loyalty</li>
+          <li>Campagne e punto di contatto Sidea</li>
+        </ul>
+      </div>
+      <div>
+        <div class="colh">Competenze</div>
+        <ul class="clean">
+          <li>Piattaforma ecommerce (Shopify)</li>
+          <li>Analytics (GA4, CLV, KPI canale)</li>
+          <li>Marketing digitale e pricing</li>
+          <li>Leadership trasversale</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note" style="color:var(--cyan2);">Non è tecnico, non è il data analyst, non è il category: li coordina. Seniority mid-senior.</div>
+  </div>
+  <div class="ftag">04-ruoli-mancanti/ecommerce-manager</div>
+</section>
+
+<!-- 10 SPECIALISTA ANAGRAFICA -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">10</div>
+  <div class="pad" style="padding-top:60px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Ruolo urgente</div></div>
+    <h2>Specialista Anagrafica Prodotto</h2>
+    <p class="lead">Senza un catalogo pulito il canale ecommerce non decolla. Lo Specialista costruisce e mantiene il catalogo digitale.</p>
+    <div class="two" style="margin-top:8px;">
+      <div><div class="colh">Cosa fa</div>
+        <ul class="clean"><li>Albero categorie e attributi</li><li>Schede, SKU, duplicati</li><li>Immagini e segmentazione</li></ul>
+      </div>
+      <div><div class="colh">Confini</div>
+        <ul class="clean"><li>Non decide assortimento (Category)</li><li>Non fa i prezzi</li><li>Entry level, poi autonomo</li></ul>
+      </div>
+    </div>
+    <div class="note">PIM = la persona, non il software. Il "tool" è Shopify ben strutturato (metafield / metaobject).</div>
+  </div>
+  <div class="ftag">04-ruoli-mancanti/specialista-anagrafica-prodotto</div>
+</section>
+
+<!-- 11 OPS + IT -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">11</div>
+  <div class="pad" style="padding-top:60px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Operatività e tecnologia</div></div>
+    <h2>Ecommerce Ops e IT Ecommerce</h2>
+    <div class="two" style="margin-top:16px;">
+      <div><div class="colh">Responsabile Ecommerce Ops</div>
+        <ul class="clean"><li>Ordini, evasione, resi</li><li>Assistenza e reclami</li><li>Candidati: Ninfa, Anna, Valluzzi</li></ul>
+      </div>
+      <div><div class="colh">IT Ecommerce</div>
+        <ul class="clean"><li>Sito, integrazioni, sync</li><li>Supporto tecnico Shopify</li><li>Sidea + formazione Isidoro</li></ul>
+      </div>
+    </div>
+    <div class="note">Ops nasce internamente dal ticketing; IT parte da Sidea.</div>
+  </div>
+  <div class="ftag">responsabile-ecommerce-ops / it-ecommerce</div>
+</section>
+
+<!-- 12 RISCHI -->
+<section class="slide dark">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">12</div>
+  <div class="pad" style="padding-top:60px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow">Attenzione</div></div>
+    <h2>I rischi da gestire</h2>
+    <div class="cards" style="margin-top:20px;">
+      <div class="card"><h3>Persone sovraccariche</h3><p>Tania e Nicola sono ponti su troppe aree: rischio single point of failure. Da alleggerire.</p></div>
+      <div class="card"><h3>Processi mancanti</h3><p>Doppio caricamento promo (POS e web), policy prezzi / prodotti esclusivi non ancora decisa.</p></div>
+    </div>
+    <div class="note" style="color:var(--cyan2);">Li affrontiamo nel piano di transizione.</div>
+  </div>
+  <div class="ftag">02-gap-analysis</div>
+</section>
+
+<!-- 13 PERCORSO -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">13</div>
+  <div class="pad" style="padding-top:44px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Piano di transizione</div></div>
+    <h2 style="font-size:23px;">Il percorso in fasi</h2>
+    <table class="mini" style="margin-top:16px;">
+      <tr><th style="width:16%;">Fase</th><th style="width:14%;">Quando</th><th>Cosa succede</th></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">1. Sblocco</td><td>Mese 1</td><td>Si assume l'Ecommerce Manager e si configurano i ruoli Shopify: senza il responsabile del canale tutto il resto resta fermo.</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">2. Assessment</td><td>Mese 1-2</td><td>Si verifica, persona per persona, quali competenze digitali il team già ha e dove serve formazione.</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">3. Upskilling</td><td>Mese 2-6</td><td>Si formano le persone interne: Category sul merchandising digitale, Data sull'analytics, Ticketing sul care multicanale.</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">4. Acquisizione</td><td>Mese 1-3</td><td>Si coprono le competenze che non esistono: Specialista Anagrafica, SEO, email automation (assunzione o consulenza).</td></tr>
+      <tr><td style="font-weight:600;color:var(--navy);">5. Processi</td><td>Mese 3-4</td><td>Si costruiscono i meccanismi omnicanale: prezzi/promo unificati, policy prodotti, approvazione contenuti.</td></tr>
+    </table>
+  </div>
+  <div class="ftag">05-piano-transizione-competenze</div>
+</section>
+
+<!-- 14 COMPETENZE -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">14</div>
+  <div class="pad" style="padding-top:56px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Competenze</div></div>
+    <h2>Verificare, coltivare, acquisire</h2>
+    <div class="cards" style="margin-top:16px;">
+      <div class="card"><h3>Verificare</h3><p>Assessment sulle persone attuali: chi sa già fare cosa sul digitale</p></div>
+      <div class="card"><h3>Coltivare</h3><p>Category -> merchandising digitale<br>Data -> analytics<br>Ticketing -> care multicanale</p></div>
+      <div class="card"><h3>Acquisire</h3><p>Ecommerce Manager, Anagrafica, SEO, email automation</p></div>
+    </div>
+    <div class="note">La maggior parte delle competenze si coltiva internamente.</div>
+  </div>
+  <div class="ftag">05-piano-transizione-competenze</div>
+</section>
+
+<!-- 15 PROCESSI -->
+<section class="slide dark">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">15</div>
+  <div class="pad" style="padding-top:56px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow">Non persone, meccanismi</div></div>
+    <h2>I processi omnicanale da costruire</h2>
+    <div class="cards" style="margin-top:16px;">
+      <div class="card"><h3>Fonte unica prezzi/promo</h3><p>Una regola, due canali: basta doppio caricamento</p></div>
+      <div class="card"><h3>Policy prodotti e prezzi</h3><p>Cosa solo negozio, cosa solo web, a che prezzo</p></div>
+    </div>
+    <div class="cards" style="margin-top:14px;">
+      <div class="card"><h3>Hand-off consulenza</h3><p>Confini chiari tra Sidea e team interno</p></div>
+      <div class="card"><h3>SOP approvazione</h3><p>Bozza, controllo, pubblicazione</p></div>
+    </div>
+  </div>
+  <div class="ftag">05 - fase 4</div>
+</section>
+
+<!-- 16 PERCHE PERMESSI -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">16</div>
+  <div class="pad" style="padding-top:70px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Governance accessi</div></div>
+    <h2>Perché servono ruoli e permessi Shopify</h2>
+    <p class="lead">Non tutti devono poter fare tutto. Il principio è l'accesso minimo necessario: ogni persona vede e tocca solo ciò che le serve. Così proteggiamo dati dei clienti, finanze e il sito live.</p>
+    <div style="margin-top:18px;">
+      <span class="pill">Dati clienti protetti</span>
+      <span class="pill p">Finanze isolate</span>
+      <span class="pill">Sito live solo agli admin</span>
+    </div>
+  </div>
+  <div class="ftag">06-ruoli-permessi-shopify</div>
+</section>
+
+<!-- 17 5 RUOLI SHOPIFY -->
+<section class="slide dark">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">17</div>
+  <div class="pad" style="padding-top:48px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow">I profili di accesso</div></div>
+    <h2>I 4 + 1 ruoli Shopify</h2>
+    <table class="mini" style="margin-top:14px;">
+      <tr><th>Ruolo</th><th>Può</th><th>Non può</th></tr>
+      <tr><td>Amministratore</td><td>Tutto (gestionale)</td><td>Pausa/chiusura negozio</td></tr>
+      <tr><td>Operatore</td><td>Ordini, clienti, scorte</td><td>Prezzi, impostazioni, finanze</td></tr>
+      <tr><td>Referente Finanziario</td><td>Finanze, fatture, report</td><td>Modificare catalogo/contenuti</td></tr>
+      <tr><td>Collaboratore Contenuti</td><td>Carica prodotti e contenuti</td><td>Pubblicare, ordini, eliminare</td></tr>
+      <tr><td>Analista Data &amp; CX (Tania)</td><td>Dati, clienti, marketing</td><td>Evasione, finanze, sistema</td></tr>
+    </table>
+    <div class="note" style="color:var(--cyan2);">Questi sono i profili di accesso Shopify, distinti dai ruoli organizzativi: una persona ricopre un ruolo nel team e un profilo di accesso sullo store.</div>
+  </div>
+  <div class="ftag">06 / 07</div>
+</section>
+
+<!-- 18 ENTRY LEVEL -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">18</div>
+  <div class="pad" style="padding-top:60px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Entry level</div></div>
+    <h2>Il collaboratore carica, ma non pubblica</h2>
+    <div class="flow" style="margin-top:30px;">
+      <div class="fbox" style="background:var(--iceBG);color:var(--navy);border-color:var(--line);">Bozza<br><span style="font-weight:400;font-size:12px;">collaboratore</span></div>
+      <div class="arr">&#8594;</div>
+      <div class="fbox" style="background:var(--purple);border-color:var(--purple);">Approvazione<br><span style="font-weight:400;font-size:12px;">supervisore</span></div>
+      <div class="arr">&#8594;</div>
+      <div class="fbox">Pubblicazione<br><span style="font-weight:400;font-size:12px;">online</span></div>
+    </div>
+    <div class="note">Nota onesta: Shopify non ha un'approvazione nativa. È una procedura (SOP), con eventuale app di supporto.</div>
+  </div>
+  <div class="ftag">06 - approvazione</div>
+</section>
+
+<!-- 19 MATRICE -->
+<section class="slide">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">19</div>
+  <div class="pad" style="padding-top:52px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow" style="color:var(--purple);">Documento operativo</div></div>
+    <h2>La matrice permessi (estratto)</h2>
+    <table class="mini" style="margin-top:12px;">
+      <tr><th>Autorizzazione</th><th>Adm</th><th>Ops</th><th>Fin</th><th>Cnt</th><th>Anl</th></tr>
+      <tr><td>Ordini - Visualizza</td><td class="y">SI</td><td class="y">SI</td><td class="y">SI</td><td class="n">no</td><td class="y">SI</td></tr>
+      <tr><td>Ordini - Evadi e spedisci</td><td class="y">SI</td><td class="y">SI</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>Prodotti - Modifica prezzo</td><td class="y">SI</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>Clienti - Crea e modifica</td><td class="y">SI</td><td class="y">SI</td><td class="n">no</td><td class="n">no</td><td class="y">SI</td></tr>
+      <tr><td>Negozio online - Temi</td><td class="y">SI</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>Finanze - Documenti fiscali</td><td class="y">SI</td><td class="n">no</td><td class="y">SI</td><td class="n">no</td><td class="n">no</td></tr>
+    </table>
+    <div class="note">Checklist completa (19 categorie di permessi) nel documento operativo a parte.</div>
+  </div>
+  <div class="ftag">07-matrice-permessi-shopify</div>
+</section>
+
+<!-- 20 PROSSIMI PASSI -->
+<section class="slide dark">
+  <div class="logo">Sidea <span class="x">X</span></div><div class="snum">20</div>
+  <div class="pad" style="padding-top:56px;">
+    <div class="barhead"><div class="bar"></div><div class="eyebrow">Prossimi passi</div></div>
+    <h2>Cosa facciamo adesso</h2>
+    <ul class="clean" style="margin-top:18px;font-size:15px;">
+      <li>Nominare / assumere l'Ecommerce Manager (sblocca tutto)</li>
+      <li>Avviare l'assessment delle competenze del team</li>
+      <li>Configurare i ruoli e i permessi su Shopify</li>
+      <li>Avviare l'upskilling (Category, Data, Ticketing)</li>
+      <li>Definire i processi omnicanale (prezzi, promo, approvazioni)</li>
+    </ul>
+    <div class="note" style="color:var(--cyan2);">Il primo passo sblocca tutti gli altri.</div>
+  </div>
+  <div class="ftag">prossimi passi</div>
+</section>
+
+<!-- 21 CHIUSURA -->
+<section class="slide dark cover">
+  <div class="pad">
+    <div class="eyebrow" style="margin-top:130px;">Il momento è adesso</div>
+    <h1 style="font-size:36px;margin-top:14px;max-width:800px;">Il negozio fisico è la vostra forza: l'omnicanale la moltiplica.</h1>
+    <div class="sub" style="color:var(--ice);max-width:720px;">Avete già le persone giuste. Diamo loro gli strumenti per vincere online.</div>
+    <div style="position:absolute;bottom:44px;left:56px;font-size:13px;color:var(--purple2);">Sidea &middot; Villabebe Giokids &middot; pronti a partire</div>
+  </div>
+  <div class="cover-wave"></div>
+</section>
+
+</div><!-- /deck -->
+</div><!-- /stage -->
+
+<div class="nav">
+  <button id="prev" aria-label="Precedente">&#8249;</button>
+  <span class="count" id="count">1 / 21</span>
+  <button id="next" aria-label="Successiva">&#8250;</button>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0, n = slides.length;
+  var stage = document.getElementById('stage');
+  var countEl = document.getElementById('count');
+  var prevB = document.getElementById('prev'), nextB = document.getElementById('next');
+
+  function show(k){
+    i = Math.max(0, Math.min(n-1, k));
+    slides.forEach(function(s,idx){ s.classList.toggle('active', idx===i); });
+    countEl.textContent = (i+1) + ' / ' + n;
+    prevB.disabled = (i===0);
+    nextB.disabled = (i===n-1);
+    location.hash = 's' + (i+1);
+  }
+  function fit(){
+    var scale = Math.min(window.innerWidth/960, window.innerHeight/540) * 0.94;
+    stage.style.transform = 'scale(' + scale + ')';
+  }
+  prevB.onclick = function(){ show(i-1); };
+  nextB.onclick = function(){ show(i+1); };
+  document.addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight' || e.key===' ' || e.key==='PageDown'){ e.preventDefault(); show(i+1); }
+    else if(e.key==='ArrowLeft' || e.key==='PageUp'){ e.preventDefault(); show(i-1); }
+    else if(e.key==='Home'){ show(0); }
+    else if(e.key==='End'){ show(n-1); }
+    else if(e.key==='f' || e.key==='F'){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } }
+  });
+  window.addEventListener('resize', fit);
+  // deep-link support (#s7)
+  var m = (location.hash.match(/^#s(\d+)$/));
+  fit();
+  show(m ? parseInt(m[1],10)-1 : 0);
+})();
+</script>
+</body>
+</html>

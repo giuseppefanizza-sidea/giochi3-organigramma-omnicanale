@@ -119,10 +119,38 @@
     .nav .count{font-size:15px;min-width:60px;}
     .hint{font-size:10px;top:8px;padding:0 10px;text-align:center;width:100%;}
   }
-  /* portrait phones: the 960x540 slide is scaled by JS; keep nav clear of it */
-  @media (max-width:560px){
+  /* portrait phones: fill the screen instead of letterboxing a 16:9 slide */
+  @media (max-width:560px) and (orientation:portrait){
     .hint{display:none;}
-    .nav{bottom:10px;}
+    .nav{bottom:12px;}
+    .stage{transform:none !important;width:100vw;height:100vh;}
+    .deck{width:100vw;height:100vh;}
+    .slide{width:100vw;height:100vh;border-radius:0;box-shadow:none;}
+    .pad{padding:9vw 7vw 16vw;overflow-y:auto;}
+    .logo{top:4vw;left:6vw;font-size:4.2vw;}
+    .snum{top:4vw;right:6vw;font-size:3.2vw;}
+    h1{font-size:8vw !important;}
+    h2{font-size:6.4vw !important;}
+    .eyebrow{font-size:3.4vw;}
+    .bar{width:1.4vw;height:8vw;}
+    .lead,.sub{font-size:4.4vw !important;max-width:100% !important;}
+    ul.clean li{font-size:4vw;line-height:1.6;}
+    .colh{font-size:4.2vw;}
+    .card h3{font-size:4.2vw;}
+    .card p{font-size:3.6vw;}
+    .bignum{font-size:8vw;}
+    .pill{font-size:3.2vw;}
+    table.mini{font-size:3vw !important;}
+    table.mini th,table.mini td{padding:1.6vw 2vw;}
+    .note{font-size:3.2vw;}
+    .cards{gap:3vw;}
+    .two{flex-direction:column;gap:4vw;}
+    .flow{flex-direction:column;gap:3vw;}
+    .flow .arr{transform:rotate(90deg);}
+    .cover-wave{height:28vh;}
+    .ftag{display:none;}
+    /* cover vertical centering */
+    .cover .pad .eyebrow[style]{margin-top:30vh !important;}
   }
 </style>
 </head>
@@ -572,6 +600,8 @@
     location.hash = 's' + (i+1);
   }
   function fit(){
+    var portraitPhone = window.matchMedia('(max-width:560px) and (orientation:portrait)').matches;
+    if(portraitPhone){ stage.style.transform = 'none'; return; }
     var isTouch = window.matchMedia('(pointer:coarse)').matches || window.innerWidth<=768;
     var pad = isTouch ? 0.98 : 0.94;
     var reserveH = isTouch ? 84 : 40; // leave room for the nav bar
